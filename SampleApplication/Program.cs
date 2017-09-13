@@ -6,6 +6,7 @@ using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace SampleApplication
 {
@@ -19,7 +20,7 @@ namespace SampleApplication
 
         private DocumentClient client;
         private long idData = DateTimeOffset.Now.Ticks;
-        
+        private string[] customers = { "Winshuttle","Google", "Microsoft", "Microsoft", "Coke", "Philips", "Microsoft", "SaintGobain", "Microsoft", "Amazon", "GeneralMotors", "Cascades", "Nokia", "Apple", "Oracle", "Dell", "Microsoft", "HP", "Microsoft", "Honor" };
         static void Main(string[] args)
         {
             try
@@ -55,18 +56,23 @@ namespace SampleApplication
 
             //await this.client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri(DATABASE_NAME), new DocumentCollection { Id = COLLECTION_NAME });
             await this.client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri(DATABASE_NAME), myCollection);
-            
+
+            var watch = new Stopwatch();
+            watch.Start();
+
             for (int i = 1; i <= 0; i++)
             {
+                string customerName = customers[GenerateRandomNumber()];
+                
                 Log log1 = new Log
                 {
                     Id = "Id" + idData,
-                    ActivityDateTimeTicks = DateTimeOffset.Now.Ticks,
-                    CRMCustomerId = "MicrosoftId",
+                    ActivityDateTimeTicks = GenerateRandomTicks(),
+                    CRMCustomerId = customerName + "Id",
                     CRMLicenseId = "L0-" + idData++,
                     CustomerId = 1,
-                    CustomerName = "Microsoft",
-                    DataFilePath = @"C:\Users\phinger1\Documents\Winshuttle\Studio\Data\VA02_20170720_142458.xlsx",
+                    CustomerName = customerName,
+                    DataFilePath = @"C:\Users\phinger1\Documents\" + customerName + @"\Studio\Data\VA02_20170720_142458.xlsx",
                     ErroredRecords = 0,
                     ManualUploadTime = "00:01:09",
                     Module = "Transaction",
@@ -76,45 +82,47 @@ namespace SampleApplication
                     SapClient = "800",
                     SapSystem = "W6R",
                     SapTcode = "MM02",
-                    SapUsername = "phinger",
-                    ScriptFilePath = @"C:\Users\phinger1\Documents\Winshuttle\Studio\Data\VA02_20170720_142458.txr",
+                    SapUsername = "phinger" + customerName,
+                    ScriptFilePath = @"C:\Users\phinger1\Documents\" + customerName + @"\Studio\Data\VA02_20170720_142458.txr",
                     ShuttleUploadTime = "00:00:02",
                     TimeSaved = "00:01:07",
                     TotalTimeSaved = "01:51:40",
-                    UserEmail = "pritam.hinger@microsoft.com"
+                    UserEmail = "pritam.hinger@" + customerName + ".com"
                 };
 
                 await this.CreateFamilyDocumentIfNotExists(DATABASE_NAME, COLLECTION_NAME, log1);
+                //Log log2 = new Log
+                //{
+                //    Id = "Id" + idData,
+                //    ActivityDateTimeTicks = DateTimeOffset.Now.Ticks,
+                //    CRMCustomerId = "GoogleId",
+                //    CRMLicenseId = "L0-" + idData++,
+                //    CustomerId = 1,
+                //    CustomerName = "Google",
+                //    DataFilePath = @"C:\Users\pritamh\Documents\Winshuttle\Studio\Data\VA02_20170720_142458.xlsx",
+                //    ErroredRecords = 0,
+                //    ManualUploadTime = "00:01:09",
+                //    Module = "Transaction",
+                //    RecordingMode = "Batch Input",
+                //    RecordsUploaded = 100,
+                //    RunReason = "For some reason",
+                //    SapClient = "800",
+                //    SapSystem = "W6R",
+                //    SapTcode = "MM02",
+                //    SapUsername = "pritamh",
+                //    ScriptFilePath = @"C:\Users\pritamh\Documents\Winshuttle\Studio\Data\VA02_20170720_142458.txr",
+                //    ShuttleUploadTime = "00:00:02",
+                //    TimeSaved = "00:01:07",
+                //    TotalTimeSaved = "01:51:40",
+                //    UserEmail = "pritam.hinger@google.com"
+                //};
 
-                Log log2 = new Log
-                {
-                    Id = "Id" + idData,
-                    ActivityDateTimeTicks = DateTimeOffset.Now.Ticks,
-                    CRMCustomerId = "GoogleId",
-                    CRMLicenseId = "L0-" + idData++,
-                    CustomerId = 1,
-                    CustomerName = "Google",
-                    DataFilePath = @"C:\Users\pritamh\Documents\Winshuttle\Studio\Data\VA02_20170720_142458.xlsx",
-                    ErroredRecords = 0,
-                    ManualUploadTime = "00:01:09",
-                    Module = "Transaction",
-                    RecordingMode = "Batch Input",
-                    RecordsUploaded = 100,
-                    RunReason = "For some reason",
-                    SapClient = "800",
-                    SapSystem = "W6R",
-                    SapTcode = "MM02",
-                    SapUsername = "pritamh",
-                    ScriptFilePath = @"C:\Users\pritamh\Documents\Winshuttle\Studio\Data\VA02_20170720_142458.txr",
-                    ShuttleUploadTime = "00:00:02",
-                    TimeSaved = "00:01:07",
-                    TotalTimeSaved = "01:51:40",
-                    UserEmail = "pritam.hinger@google.com"
-                };
-
-                await this.CreateFamilyDocumentIfNotExists(DATABASE_NAME, COLLECTION_NAME, log2);
+                //await this.CreateFamilyDocumentIfNotExists(DATABASE_NAME, COLLECTION_NAME, log2);
             }
-            
+
+            watch.Stop();
+            Console.WriteLine("Total time taken to unser : {0}", watch.ElapsedMilliseconds);
+
             this.ExecuteSimpleQuery(DATABASE_NAME, COLLECTION_NAME);
             //await this.client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(DATABASE_NAME));
         }
@@ -123,8 +131,10 @@ namespace SampleApplication
         {
             try
             {
-                await this.client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseName, collectionName, log.Id), new RequestOptions { PartitionKey = new PartitionKey("CustomerName")});
-                this.WriteToConsoleAndPromptToContinue("Found {0}", log.Id);
+                //await this.client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseName, collectionName, log.Id), new RequestOptions { PartitionKey = new PartitionKey("CustomerName")});
+                //this.WriteToConsoleAndPromptToContinue("Found {0}", log.Id);
+                await this.client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseName, collectionName), log);
+                this.WriteToConsoleAndPromptToContinue("Created Log {0}", log.Id);
             }
             catch (DocumentClientException ex)
             {
@@ -143,48 +153,62 @@ namespace SampleApplication
 
         // ADD THIS PART TO YOUR CODE
         private void ExecuteSimpleQuery(string databaseName, string collectionName)
-        {             
-            // Set some common query options
-            FeedOptions queryOptions = new FeedOptions { MaxItemCount = -1};
-
-            Stopwatch watch = new Stopwatch();
-            watch.Start();
-            //this.client.CreateDocumentQuery<Log>()
-            // Here we find the Log via its UserEmail
-            IQueryable<Log> logQuery = this.client.CreateDocumentQuery<Log>(
-                    UriFactory.CreateDocumentCollectionUri(databaseName, collectionName), queryOptions, "CustomerName")
-                    .Where(f => f.CustomerName == "Google");
-
-            // The query is executed synchronously here, but can also be executed asynchronously via the IDocumentQuery<T> interface
-            Console.WriteLine("Running LINQ query...");
-            int i = 0;
-            foreach (Log log in logQuery)
+        {
+            HashSet<string> customerSet = new HashSet<string>();
+            foreach (var customerName in customers)
             {
-                i++;
-                Console.WriteLine("\tRead {0}", log);
+                if (customerSet.Contains(customerName))
+                {
+                    continue;
+                }
+
+                customerSet.Add(customerName);
+
+                // Set some common query options
+                FeedOptions queryOptions = new FeedOptions { MaxItemCount = 500 };
+
+                Stopwatch watch = new Stopwatch();
+                watch.Start();
+                //this.client.CreateDocumentQuery<Log>()
+                // Here we find the Log via its UserEmail
+                IQueryable<Log> logQuery = this.client.CreateDocumentQuery<Log>(
+                        UriFactory.CreateDocumentCollectionUri(databaseName, collectionName), queryOptions, "CustomerName")
+                        .Where(f => f.CustomerName == customerName);
+
+                // The query is executed synchronously here, but can also be executed asynchronously via the IDocumentQuery<T> interface
+                Console.WriteLine("Running LINQ query...");
+                int i = 0;
+                foreach (Log log in logQuery)
+                {
+                    i++;
+                    //Console.WriteLine("\tRead {0}", log);
+                }
+
+                watch.Stop();
+                Console.WriteLine("Total Count  for {0} using LINQ : {1}", customerName, i);
+                Console.WriteLine("Time taken : {0}", watch.ElapsedMilliseconds);
+                watch.Start();
+
+                // Now execute the same query via direct SQL
+                IQueryable<Log> logQueryInSql = this.client.CreateDocumentQuery<Log>(
+                        UriFactory.CreateDocumentCollectionUri(databaseName, collectionName),
+                        "SELECT * FROM Log WHERE Log.CustomerName = '" + customerName +"'",
+                        //"SELECT TOP 500 * FROM Log",
+                        queryOptions);
+
+                Console.WriteLine("Running direct SQL query...");
+                i = 0;
+                foreach (Log log in logQueryInSql)
+                {
+                    i++;
+                    //Console.WriteLine("\tRead {0}", log);
+                }
+
+                watch.Stop();
+                Console.WriteLine("Total Count for {0} using SQL : {1}", customerName, i);
+                Console.WriteLine("Time taken : {0}", watch.ElapsedMilliseconds);
+
             }
-
-            Console.WriteLine("Total Count : " + i);
-            watch.Stop();
-            Console.WriteLine("Time taken : {0}", watch.ElapsedTicks);
-            watch.Start();
-            // Now execute the same query via direct SQL
-            IQueryable<Log> logQueryInSql = this.client.CreateDocumentQuery<Log>(
-                    UriFactory.CreateDocumentCollectionUri(databaseName, collectionName),
-                    "SELECT * FROM Log WHERE Log.CustomerName = 'Google'",
-                    queryOptions);
-
-            Console.WriteLine("Running direct SQL query...");
-            i = 0;
-            foreach (Log log in logQueryInSql)
-            {
-                i++;
-                Console.WriteLine("\tRead {0}", log);
-            }
-
-            Console.WriteLine("Total Count : " + i);
-            watch.Stop();
-            Console.WriteLine("Time taken : {0}", watch.ElapsedTicks);
 
             Console.WriteLine("Press any key to continue ...");
             Console.ReadKey();
@@ -210,6 +234,20 @@ namespace SampleApplication
             Console.WriteLine(format, args);
             //Console.WriteLine("Press any key to continue ...");
             //Console.ReadKey();
+        }
+
+        private int GenerateRandomNumber()
+        {
+            return new Random().Next() % customers.Length;
+        }
+
+        private long GenerateRandomTicks()
+        {
+            int randomNumber = new Random().Next();
+            int[] years = { 2015, 2016, 2017 };
+            
+            var date = new DateTimeOffset(years[randomNumber % years.Length], (new Random().Next() % 12) + 1, (new Random().Next() % 28) + 1, (new Random().Next()) % 24, randomNumber % 60, randomNumber % 60, new TimeSpan());
+            return date.Ticks;
         }
 
         public class Log
